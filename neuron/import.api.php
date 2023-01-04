@@ -12,4 +12,4 @@ foreach ($lines as $line){
     }
     $cmd .= '$network->refreshWeight('.$line[0].', '.$line[1].', '.$line[2].', '.$line[3].');'.PHP_EOL;
 }
-file_put_contents('./data/'.date('Y-m-d_H.i.s').'-cmd-n-.txt', $cmd);
+file_put_contents('./data/'.date('Y-m-d_H.i.s').'-cmd-sin-.txt', $cmd);

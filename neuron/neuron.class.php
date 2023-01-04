@@ -65,6 +65,7 @@ class Network{
         $neuron->sumWeight($input, $this->findWeight(null, $neuron)['weight'], $this->findWeight(null, $neuron)['bias']);
         $this->network[] = $neuron;
         $output = $neuron->active();
+        $neuron->output = $output;
         // 如果神经元参与突触结构，则传递兴奋
         if(!empty($neuron->dendrites)){
             foreach ($neuron->dendrites as $dendrite){
@@ -81,7 +82,7 @@ class Network{
                     if(empty($dendrite->dendrites)){
                         // 本神经网络完成反射，进行标记
                         $this->reflex = 1;
-                        $this->predict = round($dendrite->output, 6);
+                        $this->predict = round($dendrite->active($output), 6);
                         //echo '预测结果: '.$this->predict,PHP_EOL;
                     }
                     $this->excite($dendrite, $output);
@@ -99,28 +100,42 @@ class Network{
             }
         }
     }
-    public function train($result, $predict)
+    public function train($result, $predict, $size)
     {
-        $tmp = $this->loss($result, $predict, 1);
+        $tmp = $this->loss1($result, $predict, 1);
         $this->text .= $tmp.PHP_EOL;
         unset($this->result);
-        for ($i = 7; $i > 0; $i--) {
-            $res7 = $tmp;
-            foreach ($this->weights as $weight) {
-                if ($weight['from']->name === $i) {
-                    ${'res'.$i} += $weight['loss'];
+        // 该算法有问题，res未正常工作
+        $res = array();
+        for ($i = $size; $i > 0; $i--) {
+            $res[$size] = $tmp;
+            foreach ($this->weights as &$weight) {
+                if(!empty($this->result)){
+                    foreach ($this->result as $result){
+                        if ($result['from']->name === $i) {
+                            $res[$result['from']->name] += $result['loss'];
+                        }
+                    }
                 }
                 if ($weight['to']->name === $i) {
-                    $weight['loss'] =  ${'res'.$i} * $weight['weight'];
+                    $weight['loss'] = $res[$weight['to']->name] * $weight['weight'];
                     $this->result[] = $weight;
                 }
             }
+            }
+        $this->weights = $this->result;
         }
-    }
-    public function loss($result, $predict, $weight){
+    public function loss1($result, $predict, $weight){
         // 损失函数
         $loss = floatval($result - $predict);
         $loss = ($loss * $loss) / 2;
+        $loss = $weight * $loss;
+        return $loss;
+    }
+    public function loss2($result, $predict, $weight){
+        // 损失函数
+        $loss = floatval($result - $predict);
+        $loss = abs($loss);
         $loss = $weight * $loss;
         return $loss;
     }
@@ -146,10 +161,10 @@ class Network{
             // 反向传播
             //$fixWeight = ($this->thDerivative($result['to']->input) * $result['from']->output * $result['loss'] * $rate);
             //$fixBias = ($this->thDerivative($result['to']->input) * $result['loss'] * $rate);
-            $fixWeight = ($this->thDerivative($result['from']->output) * $result['from']->output * $result['loss'] * $rate);
-            $fixBias = ($this->thDerivative($result['from']->output) * $result['loss'] * $rate);
+            $fixWeight = ($this->reluDerivative($result['from']->output) * $result['from']->output * $result['loss'] * $rate);
+            $fixBias = ($this->reluDerivative($result['from']->output) * $result['loss'] * $rate);
             //$fix = ($this->thDerivative($result['to']->input) * $rate);
-            //echo $result['loss'] . ' | ' . $fixWeight. ' | ' .$fixBias, PHP_EOL;
+            echo $result['loss'] . ' | ' . $fixWeight. ' | ' .$fixBias, PHP_EOL;
             if(!is_nan($fixWeight)){
                 $result['weight'] -= $fixWeight;
                 $result['weight'] = round($result['weight'], 6);
@@ -169,6 +184,14 @@ class Network{
     public function thDerivative($input){
         $input = $input * $input;
         $input = 1 - $input;
+        return $input;
+    }
+    public function reluDerivative($input){
+        if($input <= 0){
+            $input = 0;
+        }else{
+            $input = 1;
+        }
         return $input;
     }
 }

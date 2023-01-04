@@ -1,0 +1,5 @@
+$network->refreshWeight($neuron1, $neuron3, 1.984994, -0.036683);
+$network->refreshWeight($neuron2, $neuron3, 0, 0);
+$network->refreshWeight(null, $neuron2, 1, 0);
+$network->refreshWeight(null, $neuron1, 0.929336, -0.141366);
+$network->refreshWeight(null, $neuron, , );
